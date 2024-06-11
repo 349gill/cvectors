@@ -4,6 +4,8 @@
 
 - CVectors is a light-weight, optimized library for implementing Linear Functions and Transformations in C.
 
+- CVectors is under active development and open-source contributions are encouraged and appreicated
+
 ## Dependencies
 - Written with [C99](https://en.wikipedia.org/wiki/C99) but should work with any other C standard with Backward Compatibility like [C23](https://en.wikipedia.org/wiki/C23_(C_standard_revision))
 
