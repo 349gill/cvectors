@@ -6,7 +6,6 @@ typedef struct {
     float *elements;
 } Vector;
 
-
 // Only 1x1, 2x2, 3x3, and 4x4 Matrices are supported. In the case of 
 // Square matrices with dimension > 4, all defined operations will work as 
 // expected except Matrix Multiplication and computation of Determinants.
@@ -14,8 +13,6 @@ typedef struct {
     int dimension;
     float **elements;
 } Matrix;
-
-
 
 Vector* add_vectors(Vector v1, Vector v2);
 Vector* subtract_vectors(Vector v1, Vector v2);
@@ -232,8 +229,6 @@ Matrix* multiply_matrices(Matrix m1, Matrix m2) {
 
             A1.dimension = 2, A2.dimension = 2, A3.dimension = 3, A4.dimension = 4;
             B1.dimension = 2, B2.dimension = 2, B3.dimension = 3, B4.dimension = 4;
-
-
 
             return NULL;
         }
