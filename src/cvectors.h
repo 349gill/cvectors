@@ -23,6 +23,8 @@ Vector* scale_vector(float c, Vector v);
 float magnitude_vector(Vector v);
 Vector* normalize_vector(Vector v);
 
+Matrix* create_matrix(int dimension);
+void free_matrix(Matrix* m);
 Matrix* add_matrices(Matrix m1, Matrix m2);
 Matrix* subtract_matrices(Matrix m1, Matrix m2);
 Matrix* multiply_matrices(Matrix m1, Matrix m2);
@@ -137,6 +139,18 @@ Vector* normalize_vector(Vector v) {
     return &n;
 }
 
+Matrix* create_matrix(int dimension) {
+    Matrix m;
+    m.dimension = dimension;
+    m.elements = (float **) malloc(dimension * dimension * sizeof(float));
+    return &m;
+}
+
+void free_matrix(Matrix* m) {
+    free(m->elements);
+    return;
+}
+
 Matrix* add_matrices(Matrix m1, Matrix m2) {
     if (m1.dimension != m2.dimension) {
         return NULL;
@@ -227,10 +241,51 @@ Matrix* multiply_matrices(Matrix m1, Matrix m2) {
             Matrix mult1, mult2, mult3, mult4 , mult5, mult6, mult7;
             Matrix A1, A2, A3, A4, B1, B2, B3, B4;
 
-            A1.dimension = 2, A2.dimension = 2, A3.dimension = 3, A4.dimension = 4;
-            B1.dimension = 2, B2.dimension = 2, B3.dimension = 3, B4.dimension = 4;
+            A1.dimension = 2, A2.dimension = 2, A3.dimension = 2, A4.dimension = 2;
+            B1.dimension = 2, B2.dimension = 2, B3.dimension = 2, B4.dimension = 2;
 
-            return NULL;
+            for (int i = 0; i < 2; i++) {
+                for (int j = 0; j < 2; j++) {
+                    A1.elements[i][j] = m1.elements[i][j];
+                    A2.elements[i][j] = m1.elements[i][j + 2];
+                    A3.elements[i][j] = m1.elements[i + 2][j];
+                    A4.elements[i][j] = m1.elements[i + 2][j + 2];
+                    B1.elements[i][j] = m2.elements[i][j];
+                    B2.elements[i][j] = m2.elements[i][j + 2];
+                    B3.elements[i][j] = m2.elements[i + 2][j];
+                    B4.elements[i][j] = m2.elements[i + 2][j + 2];
+                }
+            }
+
+            Matrix *M1 = multiply_matrices(*add_matrices(A1, A4), *add_matrices(B1, B4));
+            Matrix *M2 = multiply_matrices(*add_matrices(A3, A4), B1);
+            Matrix *M3 = multiply_matrices(A1, *subtract_matrices(B2, B4));
+            Matrix *M4 = multiply_matrices(A4, *subtract_matrices(B3, B1));
+            Matrix *M5 = multiply_matrices(*add_matrices(A1, A2), B4);
+            Matrix *M6 = multiply_matrices(*subtract_matrices(A3, A1), *add_matrices(B1, B2));
+            Matrix *M7 = multiply_matrices(*subtract_matrices(A2, A4), *add_matrices(B3, B4));
+
+            Matrix *C11 = add_matrices(*subtract_matrices(*add_matrices(*M1, *M4), *M5), *M7);
+            Matrix *C12 = add_matrices(*M3, *M5);
+            Matrix *C21 = add_matrices(*M2, *M4);
+            Matrix *C22 = add_matrices(*subtract_matrices(*add_matrices(*M1, *M3), *M2), *M6);
+
+            Matrix *C = create_matrix(m1.dimension);
+            for (int i = 0; i < 2; i++) {
+                for (int j = 0; j < 2; j++) {
+                    C->elements[i][j] = C11->elements[i][j];
+                    C->elements[i][j + 2] = C12->elements[i][j];
+                    C->elements[i + 2][j] = C21->elements[i][j];
+                    C->elements[i + 2][j + 2] = C22->elements[i][j];
+                }
+            }
+
+            free_matrix(&A1); free_matrix(&A2); free_matrix(&A3); free_matrix(&A4);
+            free_matrix(&B1); free_matrix(&B2); free_matrix(&B3); free_matrix(&B4);
+            free_matrix(M1); free_matrix(M2); free_matrix(M3); free_matrix(M4); free_matrix(M5); free_matrix(M6); free_matrix(M7);
+            free_matrix(C11); free_matrix(C12); free_matrix(C21); free_matrix(C22);
+
+            return C;
         }
         else {
             free(m.elements);
@@ -266,5 +321,36 @@ Matrix* scale_matrix(float c, Matrix m) {
 }
 
 float determinant_matrix(Matrix m) {
-    return 0; // To be implemented
+
+    if (m.dimension == 2) {
+        return (m.elements[0][0] * m.elements[2][2]) - (m.elements[1][2] * m.elements[2][1]);
+    }
+    else if (m.dimension == 1) {
+        return m.elements[0][0];
+    }
+    else if (m.dimension == 3 || m.dimension == 4) {
+        float determinant; int factor = 1;
+        Matrix *new_matrix;
+        for(int i = 0; i < m.dimension; i++) 
+        {
+            new_matrix->elements = (float **) malloc((m.dimension-1) * (m.dimension - 1) * sizeof(float));
+            // Skip first row
+            for(int j = 1; j < m.dimension; j++) 
+            {
+                for (int k = 0; k < m.dimension; k++)
+                {
+                    if (k == i) {
+                        continue;
+                    };
+                    new_matrix->elements[j-1][k < i ? k :(k - 1)] = m.elements[j][k];
+                }
+            }
+            determinant += factor * m.elements[0][i] * determinant_matrix(*new_matrix);
+            factor *= -1;
+            free(new_matrix);
+        }
+        return determinant;
+    }
+
+    return 0;
 }
