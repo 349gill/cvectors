@@ -161,7 +161,7 @@ void test_multiply_matrices() {
 
 int main() {
     srand(time(NULL));
-
+    #ifdef VECTOR_TEST
     test_add_vectors();
     test_subtract_vectors();
     test_dot_product();
@@ -169,11 +169,14 @@ int main() {
     test_transform_vector();
     test_scale_vector();
     test_normalize_vector();
+    #endif
+
+    #ifdef MATRIX_TEST
     test_add_matrices();
     test_subtract_matrices();
     test_multiply_matrices();
+    #endif
 
     printf("All tests passed successfully!\n");
-
     return 0;
 }

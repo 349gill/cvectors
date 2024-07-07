@@ -1,5 +1,19 @@
+/*
+ *  cvectors.h
+ *  
+ *  First Commit: May 27, 2024
+ *      Author: Harsh Gill
+ * 
+ *  Linear Algebra Library Supporting upto 4-dimensional
+ *  Vectors and Matrices. Intended for Computer Graphics purposes.
+ */
+
+#ifndef CVECTORS_H
+#define CVECTORS_H
+
 #include <math.h>
 #include <stdlib.h>
+#include <string.h>
 
 typedef struct {
     int dimension;
@@ -29,7 +43,7 @@ Matrix* transpose_matrix(Matrix* m);
 Matrix* scale_matrix(float c, Matrix* m);
 float determinant_matrix(Matrix* m);
 
-// Matrix Determinants and Multiplication Helper Functions
+// Matrix Helper Functions
 Matrix* strassen(Matrix* A, Matrix* B, int dim);
 Matrix* pad_matrix(Matrix* m, int new_dim);
 Matrix* unpad_matrix(Matrix* m, int original_dim);
@@ -341,3 +355,7 @@ Matrix* determinant_helper(Matrix* m, int exclude_row, int exclude_col) {
     }
     return sub;
 }
+
+
+
+#endif
