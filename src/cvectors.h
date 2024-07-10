@@ -16,6 +16,10 @@
 #include <string.h>
 
 typedef struct {
+    float x, y, z, w;
+} Quaternion;
+
+typedef struct {
     int dimension;
     float *elements;
 } Vector;
@@ -25,11 +29,24 @@ typedef struct {
     float **elements;
 } Matrix;
 
+// TO ADD: Quaternion multiply, rotate, conjugate, mat4x4 with Quaternions
+
+Quaternion* create_quaternion(float x, float y, float z, float w);
+void free_quaternion(Quaternion* q);
+Quaternion* add_quaternions(Quaternion* q1, Quaternion* q2);
+Quaternion* subtract_quaternions(Quaternion* q1, Quaternion* q2);
+float dot_product_quaternion(Quaternion* q1, Quaternion* q2);
+Quaternion* scale_quaternion(float c, Quaternion* q);
+Quaternion* normalize_quaternion(Quaternion* q);
+Quaternion* identity_quaternion();
+
 Vector* create_vector(int dimension);
 Vector* free_vector(Vector* v);
 Vector* duplicate_vector(Vector* v);
 Vector* add_vectors(Vector* v1, Vector* v2);
 Vector* subtract_vectors(Vector* v1, Vector* v2);
+float angle_between_vectors(Vector* v1, Vector* v2);
+float distance_between_vectors(Vector* v1, Vector* v2);
 float dot_product(Vector* v1, Vector* v2);
 Vector* cross_product(Vector* v1, Vector* v2);
 Vector* transform_vector(Matrix* m, Vector* v);
@@ -60,6 +77,74 @@ Matrix* rotate_matrix_X(Matrix* m, float angle);
 Matrix* rotate_matrix_Y(Matrix* m, float angle);
 Matrix* rotate_matrix_Z(Matrix* m, float angle);
 Matrix* invert_matrix(Matrix* m);
+Matrix* look_at_matrix(Vector* eye, Vector* center, Vector* up);
+Matrix* orthographic_projection_matrix(float left, float right, float bottom, float top, float near, float far);
+Matrix* perspective_projection_matrix(float fov, float aspect, float near, float far);
+
+Quaternion* create_quaternion(float x, float y, float z, float w) {
+    Quaternion* q = (Quaternion*) (malloc(sizeof(Quaternion)));
+    q->x = x;
+    q->y = y;
+    q->z = z;
+    q->w = w;
+    return q;
+}
+
+Quaternion* identity_quaternion() {
+    return create_quaternion(0, 0, 0, 1);
+}
+
+void free_quaternion(Quaternion* q) {
+    free(q);
+    return;
+}
+
+Quaternion* add_quaternions(Quaternion* q1, Quaternion* q2) {
+    Quaternion* q = (Quaternion*) (malloc(sizeof(Quaternion)));
+    q->x = q1->x + q2->x;
+    q->y = q1->y + q2->y;
+    q->z = q1->z + q2->z;
+    q->w = q1->w + q2->w;
+    return q;
+}
+
+Quaternion* subtract_quaternions(Quaternion* q1, Quaternion* q2) {
+    Quaternion* q = (Quaternion*) (malloc(sizeof(Quaternion)));
+    q->x = q1->x - q2->x;
+    q->y = q1->y - q2->y;
+    q->z = q1->z - q2->z;
+    q->w = q1->w - q2->w;
+    return q;
+}
+
+float dot_product_quaternion(Quaternion* q1, Quaternion* q2) {
+    float sum = 0;
+    sum += q1->x * q2->x;
+    sum += q1->y * q2->y;
+    sum += q1->z * q2->z;
+    sum += q1->w * q2->w;
+    return sum;
+}
+
+Quaternion* scale_quaternion(float c, Quaternion* q) {
+    Quaternion* s = (Quaternion*) (malloc(sizeof(Quaternion)));
+    s->x = s->x * c;
+    s->y = s->y * c;
+    s->z = s->z * c;
+    s->w = s->w * c;
+    return s;
+}
+
+Quaternion* normalize_quaternion(Quaternion* q) {
+    float magnitude = sqrt(dot_product(q, q));
+    Quaternion* n = (Quaternion*) (malloc(sizeof(Quaternion)));
+    n->x = q->x / magnitude;
+    n->y = q->y / magnitude;
+    n->z = q->z / magnitude;
+    n->w = q->w / magnitude;
+    return n;
+}
+
 
 Vector* projection_vector(Vector* v1, Vector* v2) {
     if (v1->dimension != v2->dimension)
@@ -75,6 +160,29 @@ Vector* max_vector(Vector* v1, Vector* v2) {
     for (int i = 0; i < v1->dimension; i++)
         max->elements[i] = v1->elements[i] > v2->elements[i] ? v1->elements[i] : v2->elements[i];
     return max;
+}
+
+float angle_between_vectors(Vector* v1, Vector* v2) {
+    if (v1->dimension != v2->dimension)
+        return -1;
+
+    float magnitude = magnitude_vector(v1) * magnitude_vector(v2);
+    if (magnitude == 0)
+        return 0;
+
+    return acos(dot_product(v1, v2) / magnitude);
+}
+
+float distance_between_vectors(Vector* v1, Vector* v2) {
+    if (v1->dimension != v2->dimension)
+        return -1;
+
+    float sum = 0, diff;
+    for (int i = 0; i < v1->dimension; i++) {
+        diff = v1->elements[i] - v2->elements[i];
+        sum += diff * diff;
+    }
+    return sqrt(sum);
 }
 
 Vector* min_vector(Vector* v1, Vector* v2) {
@@ -611,6 +719,77 @@ Matrix* invert_matrix(Matrix* m) {
 
     return inv;
 }
+
+Matrix* look_at_matrix(Vector* eye, Vector* center, Vector* up) {
+    Vector* temp = subtract_vectors(center, eye);
+
+    Vector* f = normalize_vector(temp);
+    Vector* u = normalize_vector(up);
+    Vector* s = normalize_vector(cross_product(f, u));
+
+    free_vector(u);
+    free_vector(temp);
+    u = cross_product(s, f);
+
+    Matrix* result = create_matrix(4);
+    result->elements[0][0] = s->elements[0];
+    result->elements[0][1] = s->elements[1];
+    result->elements[0][2] = s->elements[2];
+    result->elements[0][3] = 0;
+
+    result->elements[1][0] = u->elements[0];
+    result->elements[1][1] = u->elements[1];
+    result->elements[1][2] = u->elements[2];
+    result->elements[1][3] = 0;
+
+    result->elements[2][0] = -f->elements[0];
+    result->elements[2][1] = -f->elements[1];
+    result->elements[2][2] = -f->elements[2];
+    result->elements[2][3] = 0;
+
+    result->elements[3][0] = 0;
+    result->elements[3][1] = 0;
+    result->elements[3][2] = 0;
+    result->elements[3][3] = 1;
+
+    Matrix* iden = identity_matrix(4);
+    Matrix* translation = translate_matrix(iden, -eye->elements[0], -eye->elements[1], -eye->elements[2]);
+    Matrix* final_result = multiply_matrices(result, translation);
+
+    free_matrix(result); free_matrix(translation); free(iden);
+    free_vector(f); free_vector(u); free_vector(s);
+
+    return final_result;
+}
+
+Matrix* perspective_projection_matrix(float fov, float aspect, float near, float far) {
+    Matrix* result = create_matrix(4);
+    float t = tan(fov / 2.0f);
+
+    result->elements[0][0] = 1.0f / (aspect * t);
+    result->elements[1][1] = 1.0f / t;
+    result->elements[2][2] = -(far + near) / (far - near);
+    result->elements[2][3] = -1.0f;
+    result->elements[3][2] = -(2.0f * far * near) / (far - near);
+    result->elements[3][3] = 0.0f;
+
+    return result;
+}
+
+Matrix* orthographic_projection_matrix(float left, float right, float bottom, float top, float near, float far) {
+    Matrix* result = create_matrix(4);
+
+    result->elements[0][0] = 2.0f / (right - left);
+    result->elements[1][1] = 2.0f / (top - bottom);
+    result->elements[2][2] = -2.0f / (far - near);
+    result->elements[3][0] = -(right + left) / (right - left);
+    result->elements[3][1] = -(top + bottom) / (top - bottom);
+    result->elements[3][2] = -(far + near) / (far - near);
+    result->elements[3][3] = 1.0f;
+
+    return result;
+}
+
 
 
 #endif
