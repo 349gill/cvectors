@@ -25,6 +25,9 @@ typedef struct {
     float **elements;
 } Matrix;
 
+Vector* create_vector(int dimension);
+Vector* free_vector(Vector* v);
+Vector* duplicate_vector(Vector* v);
 Vector* add_vectors(Vector* v1, Vector* v2);
 Vector* subtract_vectors(Vector* v1, Vector* v2);
 float dot_product(Vector* v1, Vector* v2);
@@ -34,6 +37,9 @@ Vector* scale_vector(float c, Vector* v);
 float magnitude_vector(Vector* v);
 Vector* normalize_vector(Vector* v);
 Vector* reflection_vector(Vector* i, Vector* n);
+Vector* max_vector(Vector* v1, Vector* v2);
+Vector* min_vector(Vector* v1, Vector* v2);
+Vector* projection_vector(Vector* v1, Vector* v2);
 
 Matrix* create_matrix(int dimension);
 void free_matrix(Matrix* m);
@@ -45,19 +51,59 @@ Matrix* scale_matrix(float c, Matrix* m);
 Matrix* scale_matrix_anisotropic(float x, float y, float z, Matrix* m);
 float determinant_matrix(Matrix* m);
 Matrix* translate_matrix(Matrix* m, float x, float y, float z);
-Matrix* translate_matrix_in_place(Matrix* m, float x, float y, float z); // TO DO
+Matrix* translate_matrix_in_place(Matrix* m, float x, float y, float z);
 Matrix* outer_product(Vector* v1, Vector* v2);
-
-// TO DO
+Matrix* duplicate_matrix(Matrix* m);
+Matrix* identity_matrix(int dimension);
 Matrix* rotate_matrix(Matrix* m, float x, float y, float z, float angle);
 Matrix* rotate_matrix_X(Matrix* m, float angle);
 Matrix* rotate_matrix_Y(Matrix* m, float angle);
 Matrix* rotate_matrix_Z(Matrix* m, float angle);
+Matrix* invert_matrix(Matrix* m);
 
-// Rotating matrices, Translating matrices, Inverting matrices, Orthonormalization, Eigen stuff
-// Gram–Schmidt process for orthogonal matrices, Vector projections, Frustum projections, Quaternions
-// Matrix raised to some power. Sine, Cosine, and Tangent of a Matrix
-// Maximum and Minimum vectors, Identity Matrix, Duplicate Vector/Matrix;
+Vector* projection_vector(Vector* v1, Vector* v2) {
+    if (v1->dimension != v2->dimension)
+        return NULL;
+    float n = dot_product(v1, v2) / dot_product(v1, v1);
+    return scale_vector(n, v1);
+}
+
+Vector* max_vector(Vector* v1, Vector* v2) {
+    if (v1->dimension != v2->dimension)
+        return NULL;
+    Vector* max = create_vector(v1->dimension);
+    for (int i = 0; i < v1->dimension; i++)
+        max->elements[i] = v1->elements[i] > v2->elements[i] ? v1->elements[i] : v2->elements[i];
+    return max;
+}
+
+Vector* min_vector(Vector* v1, Vector* v2) {
+    if (v1->dimension != v2->dimension)
+        return NULL;
+    Vector* min = create_vector(v1->dimension);
+    for (int i = 0; i < v1->dimension; i++)
+        min->elements[i] = v1->elements[i] < v2->elements[i] ? v1->elements[i] : v2->elements[i];
+    return min;
+}
+
+Vector* create_vector(int dimension) {
+    Vector* v = (Vector*) malloc(sizeof(Vector));
+    v->dimension = dimension;
+    v->elements = (float *) malloc(dimension * sizeof(float));
+    return v;
+}
+
+Vector* free_vector(Vector* v) {
+    free(v->elements);
+    free(v);
+}
+
+Vector* duplicate_vector(Vector* v) {
+    Vector* d = create_vector(v->dimension);
+    for (int i = 0; i < d->dimension; i++)
+        d->elements[i] = v->elements[i];
+    return d;
+}
 
 Vector* add_vectors(Vector* v1, Vector* v2) {
     if (v1->dimension != v2->dimension)
@@ -324,7 +370,30 @@ Matrix* translate_matrix(Matrix* m, float x, float y, float z) {
 }
 
 Matrix* translate_matrix_in_place(Matrix* m, float x, float y, float z) {
-    return NULL;
+    if (m->dimension != 4) {
+        return NULL;  // This function only works for 4x4 matrices
+    }
+
+    // Create a translation vector
+    Vector* t = create_vector(4);
+    t->elements[0] = x;
+    t->elements[1] = y;
+    t->elements[2] = z;
+    t->elements[3] = 0;
+
+    // Apply translation to each column
+    for (int i = 0; i < 4; i++) {
+        float dot_product = 0;
+        for (int j = 0; j < 4; j++) {
+            dot_product += m->elements[j][i] * t->elements[j];
+        }
+        m->elements[3][i] += dot_product;
+    }
+
+    // Free the temporary vector
+    free_vector(t);
+
+    return m;
 }
 
 Matrix* outer_product(Vector* v1, Vector* v2) {
@@ -337,8 +406,211 @@ Matrix* outer_product(Vector* v1, Vector* v2) {
     return m; 
 }
 
-Matrix* invert_matrix(Matrix* m) {
-	return NULL;
+Matrix* duplicate_matrix(Matrix* m) {
+    Matrix* n = create_matrix(m->dimension);
+    for (int i = 0; i < m->dimension; i++)
+        for (int j = 0; j < m->dimension; j++)
+            n->elements[i][j] = m->elements[i][j];
+    return n;
 }
+
+Matrix* identity_matrix(int dimension) {
+    Matrix* m = create_matrix(dimension);
+    for (int i = 0; i < dimension; i++)
+        for (int j = 0; j < dimension; j++)
+            m->elements[i][j] = i == j ? 1 : 0;
+    return m;
+}
+
+Matrix* rotate_matrix(Matrix* m, float x, float y, float z, float angle) {
+    float c = cos(angle);
+    float s = sin(angle);
+    float t = 1 - c;
+    
+    float mag = sqrt(x*x + y*y + z*z);
+    x /= mag;
+    y /= mag;
+    z /= mag;
+
+    Matrix* r = create_matrix(4);
+    
+    r->elements[0][0] = t*x*x + c;
+    r->elements[0][1] = t*x*y - s*z;
+    r->elements[0][2] = t*x*z + s*y;
+    r->elements[0][3] = 0;
+
+    r->elements[1][0] = t*x*y + s*z;
+    r->elements[1][1] = t*y*y + c;
+    r->elements[1][2] = t*y*z - s*x;
+    r->elements[1][3] = 0;
+
+    r->elements[2][0] = t*x*z - s*y;
+    r->elements[2][1] = t*y*z + s*x;
+    r->elements[2][2] = t*z*z + c;
+    r->elements[2][3] = 0;
+
+    r->elements[3][0] = 0;
+    r->elements[3][1] = 0;
+    r->elements[3][2] = 0;
+    r->elements[3][3] = 1;
+
+    // Multiply the input matrix by the rotation matrix
+    Matrix* result = multiply_matrices(m, r);
+    free_matrix(r);
+    
+    return result;
+}
+
+Matrix* rotate_matrix_X(Matrix* m, float angle) {
+    float c = cos(angle);
+    float s = sin(angle);
+
+    Matrix* r = create_matrix(4);
+    
+    r->elements[0][0] = 1;
+    r->elements[0][1] = 0;
+    r->elements[0][2] = 0;
+    r->elements[0][3] = 0;
+
+    r->elements[1][0] = 0;
+    r->elements[1][1] = c;
+    r->elements[1][2] = -s;
+    r->elements[1][3] = 0;
+
+    r->elements[2][0] = 0;
+    r->elements[2][1] = s;
+    r->elements[2][2] = c;
+    r->elements[2][3] = 0;
+
+    r->elements[3][0] = 0;
+    r->elements[3][1] = 0;
+    r->elements[3][2] = 0;
+    r->elements[3][3] = 1;
+
+    Matrix* result = multiply_matrices(m, r);
+    free_matrix(r);
+    
+    return result;
+}
+
+Matrix* rotate_matrix_Y(Matrix* m, float angle) {
+    float c = cos(angle);
+    float s = sin(angle);
+
+    Matrix* r = create_matrix(4);
+    
+    r->elements[0][0] = c;
+    r->elements[0][1] = 0;
+    r->elements[0][2] = s;
+    r->elements[0][3] = 0;
+
+    r->elements[1][0] = 0;
+    r->elements[1][1] = 1;
+    r->elements[1][2] = 0;
+    r->elements[1][3] = 0;
+
+    r->elements[2][0] = -s;
+    r->elements[2][1] = 0;
+    r->elements[2][2] = c;
+    r->elements[2][3] = 0;
+
+    r->elements[3][0] = 0;
+    r->elements[3][1] = 0;
+    r->elements[3][2] = 0;
+    r->elements[3][3] = 1;
+
+    Matrix* result = multiply_matrices(m, r);
+    free_matrix(r);
+    
+    return result;
+}
+
+Matrix* rotate_matrix_Z(Matrix* m, float angle) {
+    float c = cos(angle);
+    float s = sin(angle);
+
+    Matrix* r = create_matrix(4);
+    
+    r->elements[0][0] = c;
+    r->elements[0][1] = -s;
+    r->elements[0][2] = 0;
+    r->elements[0][3] = 0;
+
+    r->elements[1][0] = s;
+    r->elements[1][1] = c;
+    r->elements[1][2] = 0;
+    r->elements[1][3] = 0;
+
+    r->elements[2][0] = 0;
+    r->elements[2][1] = 0;
+    r->elements[2][2] = 1;
+    r->elements[2][3] = 0;
+
+    r->elements[3][0] = 0;
+    r->elements[3][1] = 0;
+    r->elements[3][2] = 0;
+    r->elements[3][3] = 1;
+
+    Matrix* result = multiply_matrices(m, r);
+    free_matrix(r);
+    
+    return result;
+}
+
+Matrix* invert_matrix(Matrix* m) {
+    if (m->dimension != 4) {
+        return NULL;  // This function only works for 4x4 matrices
+    }
+
+    float s[6];
+    float c[6];
+
+    s[0] = m->elements[0][0] * m->elements[1][1] - m->elements[1][0] * m->elements[0][1];
+    s[1] = m->elements[0][0] * m->elements[1][2] - m->elements[1][0] * m->elements[0][2];
+    s[2] = m->elements[0][0] * m->elements[1][3] - m->elements[1][0] * m->elements[0][3];
+    s[3] = m->elements[0][1] * m->elements[1][2] - m->elements[1][1] * m->elements[0][2];
+    s[4] = m->elements[0][1] * m->elements[1][3] - m->elements[1][1] * m->elements[0][3];
+    s[5] = m->elements[0][2] * m->elements[1][3] - m->elements[1][2] * m->elements[0][3];
+
+    c[0] = m->elements[2][0] * m->elements[3][1] - m->elements[3][0] * m->elements[2][1];
+    c[1] = m->elements[2][0] * m->elements[3][2] - m->elements[3][0] * m->elements[2][2];
+    c[2] = m->elements[2][0] * m->elements[3][3] - m->elements[3][0] * m->elements[2][3];
+    c[3] = m->elements[2][1] * m->elements[3][2] - m->elements[3][1] * m->elements[2][2];
+    c[4] = m->elements[2][1] * m->elements[3][3] - m->elements[3][1] * m->elements[2][3];
+    c[5] = m->elements[2][2] * m->elements[3][3] - m->elements[3][2] * m->elements[2][3];
+
+    float det = s[0]*c[5] - s[1]*c[4] + s[2]*c[3] + s[3]*c[2] - s[4]*c[1] + s[5]*c[0];
+
+    if (fabs(det) < 1e-6) {
+        return NULL;  // Matrix is not invertible
+    }
+
+    float invdet = 1.0f / det;
+
+    Matrix* inv = create_matrix(4);
+
+    inv->elements[0][0] = ( m->elements[1][1] * c[5] - m->elements[1][2] * c[4] + m->elements[1][3] * c[3]) * invdet;
+    inv->elements[0][1] = (-m->elements[0][1] * c[5] + m->elements[0][2] * c[4] - m->elements[0][3] * c[3]) * invdet;
+    inv->elements[0][2] = ( m->elements[3][1] * s[5] - m->elements[3][2] * s[4] + m->elements[3][3] * s[3]) * invdet;
+    inv->elements[0][3] = (-m->elements[2][1] * s[5] + m->elements[2][2] * s[4] - m->elements[2][3] * s[3]) * invdet;
+
+    inv->elements[1][0] = (-m->elements[1][0] * c[5] + m->elements[1][2] * c[2] - m->elements[1][3] * c[1]) * invdet;
+    inv->elements[1][1] = ( m->elements[0][0] * c[5] - m->elements[0][2] * c[2] + m->elements[0][3] * c[1]) * invdet;
+    inv->elements[1][2] = (-m->elements[3][0] * s[5] + m->elements[3][2] * s[2] - m->elements[3][3] * s[1]) * invdet;
+    inv->elements[1][3] = ( m->elements[2][0] * s[5] - m->elements[2][2] * s[2] + m->elements[2][3] * s[1]) * invdet;
+
+    inv->elements[2][0] = ( m->elements[1][0] * c[4] - m->elements[1][1] * c[2] + m->elements[1][3] * c[0]) * invdet;
+    inv->elements[2][1] = (-m->elements[0][0] * c[4] + m->elements[0][1] * c[2] - m->elements[0][3] * c[0]) * invdet;
+    inv->elements[2][2] = ( m->elements[3][0] * s[4] - m->elements[3][1] * s[2] + m->elements[3][3] * s[0]) * invdet;
+    inv->elements[2][3] = (-m->elements[2][0] * s[4] + m->elements[2][1] * s[2] - m->elements[2][3] * s[0]) * invdet;
+
+    inv->elements[3][0] = (-m->elements[1][0] * c[3] + m->elements[1][1] * c[1] - m->elements[1][2] * c[0]) * invdet;
+    inv->elements[3][1] = ( m->elements[0][0] * c[3] - m->elements[0][1] * c[1] + m->elements[0][2] * c[0]) * invdet;
+    inv->elements[3][2] = (-m->elements[3][0] * s[3] + m->elements[3][1] * s[1] - m->elements[3][2] * s[0]) * invdet;
+    inv->elements[3][3] = ( m->elements[2][0] * s[3] - m->elements[2][1] * s[1] + m->elements[2][2] * s[0]) * invdet;
+
+    return inv;
+}
+
 
 #endif

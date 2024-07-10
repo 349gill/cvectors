@@ -1,6 +1,8 @@
 # CVectors
 
-- A light-weight, optimized Linear Algebra library in C, with common vector operations, transformations, and other tools used in Computer Graphics.
+- A light-weight and optimized Linear Algebra library in C, with common vector operations, transformations, and other tools used in Computer Graphics.
+
+- Supports 3-dimensional Vectors and 3x3 Matrices (Cartesian systems) and 4-dimensional Vectors and 4x4 Matrices (Homogeneous systems), as well as Quaternions.
 
 - Under active development, open-source contributions are encouraged and appreciated.
 
