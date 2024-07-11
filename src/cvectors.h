@@ -81,6 +81,80 @@ Matrix* look_at_matrix(Vector* eye, Vector* center, Vector* up);
 Matrix* orthographic_projection_matrix(float left, float right, float bottom, float top, float near, float far);
 Matrix* perspective_projection_matrix(float fov, float aspect, float near, float far);
 
+Quaternion* multiply_quaternions(Quaternion* q1, Quaternion* q2) {
+    Quaternion* result = create_quaternion(
+        q1->w * q2->x + q1->x * q2->w + q1->y * q2->z - q1->z * q2->y,
+        q1->w * q2->y - q1->x * q2->z + q1->y * q2->w + q1->z * q2->x,
+        q1->w * q2->z + q1->x * q2->y - q1->y * q2->x + q1->z * q2->w,
+        q1->w * q2->w - q1->x * q2->x - q1->y * q2->y - q1->z * q2->z
+    );
+    return result;
+}
+
+Quaternion* rotate_quaternion(Quaternion* q, Vector* axis, float angle) {
+    float half_angle = angle / 2.0f;
+    float sin_half = sin(half_angle);
+    
+    Quaternion* rotation = create_quaternion(
+        axis->elements[0] * sin_half,
+        axis->elements[1] * sin_half,
+        axis->elements[2] * sin_half,
+        cos(half_angle)
+    );
+    
+    Quaternion* rotated = multiply_quaternions(rotation, q);
+    Quaternion* conjugate = quaternion_conjugate(rotation);
+    Quaternion* result = multiply_quaternions(rotated, conjugate);
+    
+    free_quaternion(rotation);
+    free_quaternion(rotated);
+    free_quaternion(conjugate);
+    
+    return result;
+}
+
+Quaternion* quaternion_conjugate(Quaternion* q) {
+    return create_quaternion(-q->x, -q->y, -q->z, q->w);
+}
+
+Matrix* matrix_from_quaternion(Quaternion* q) {
+    Matrix* m = create_matrix(4);
+    
+    float xx = q->x * q->x;
+    float xy = q->x * q->y;
+    float xz = q->x * q->z;
+    float xw = q->x * q->w;
+    
+    float yy = q->y * q->y;
+    float yz = q->y * q->z;
+    float yw = q->y * q->w;
+    
+    float zz = q->z * q->z;
+    float zw = q->z * q->w;
+    
+    m->elements[0][0] = 1 - 2 * (yy + zz);
+    m->elements[0][1] = 2 * (xy - zw);
+    m->elements[0][2] = 2 * (xz + yw);
+    m->elements[0][3] = 0;
+    
+    m->elements[1][0] = 2 * (xy + zw);
+    m->elements[1][1] = 1 - 2 * (xx + zz);
+    m->elements[1][2] = 2 * (yz - xw);
+    m->elements[1][3] = 0;
+    
+    m->elements[2][0] = 2 * (xz - yw);
+    m->elements[2][1] = 2 * (yz + xw);
+    m->elements[2][2] = 1 - 2 * (xx + yy);
+    m->elements[2][3] = 0;
+    
+    m->elements[3][0] = 0;
+    m->elements[3][1] = 0;
+    m->elements[3][2] = 0;
+    m->elements[3][3] = 1;
+    
+    return m;
+}
+
 Quaternion* create_quaternion(float x, float y, float z, float w) {
     Quaternion* q = (Quaternion*) (malloc(sizeof(Quaternion)));
     q->x = x;
