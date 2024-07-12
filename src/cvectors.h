@@ -1,11 +1,3 @@
-/*
- *  cvectors.h
- *  
- *  First Commit: May 27, 2024
- *      Author: Harsh Gill
- *
- */
-
 #ifndef CVECTORS_H
 #define CVECTORS_H
 
@@ -226,7 +218,6 @@ Vector* cross_product(Vector* v1, Vector* v2) {
 
     return NULL;
 }
-
 
 Vector* transform_vector(Matrix* m, Vector* v) {
     if (m->dimension != v->dimension)
