@@ -71,6 +71,7 @@ Quaternion* scale_quaternion(float c, Quaternion* q);
 Quaternion* normalize_quaternion(Quaternion* q);
 Quaternion* identity_quaternion();
 Quaternion* quaternion_conjugate(Quaternion* q);
+Quaternion* rotate_quaternion(Quaternion* q, Vector* axis, float angle);
 
 Vector* projection_vector(Vector* v1, Vector* v2) {
     if (v1->dimension != v2->dimension)
@@ -745,12 +746,12 @@ Quaternion* rotate_quaternion(Quaternion* q, Vector* axis, float angle) {
         cos(half_angle)
     );
     
-    Quaternion* rotated = multiply_quaternions(rotation, q);
+    Quaternion* temp = multiply_quaternions(q, rotation);
     Quaternion* conjugate = quaternion_conjugate(rotation);
-    Quaternion* result = multiply_quaternions(rotated, conjugate);
+    Quaternion* result = multiply_quaternions(temp, conjugate);
     
     free_quaternion(rotation);
-    free_quaternion(rotated);
+    free_quaternion(temp);
     free_quaternion(conjugate);
     
     return result;
