@@ -16,6 +16,11 @@ case "$1" in
     ./test
     rm test
     ;;
+  quat)
+    make quat
+    ./test
+    rm test
+    ;;
   matrix)
     make matrix
     ./test

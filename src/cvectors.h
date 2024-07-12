@@ -3,9 +3,7 @@
  *  
  *  First Commit: May 27, 2024
  *      Author: Harsh Gill
- * 
- *  Linear Algebra Library Supporting upto 4-dimensional
- *  Vectors and Matrices. Intended for Computer Graphics purposes.
+ *
  */
 
 #ifndef CVECTORS_H
@@ -14,10 +12,6 @@
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
-
-typedef struct {
-    float x, y, z, w;
-} Quaternion;
 
 typedef struct {
     int dimension;
@@ -29,19 +23,14 @@ typedef struct {
     float **elements;
 } Matrix;
 
-// TO ADD: Quaternion multiply, rotate, conjugate, mat4x4 with Quaternions
-
-Quaternion* create_quaternion(float x, float y, float z, float w);
-void free_quaternion(Quaternion* q);
-Quaternion* add_quaternions(Quaternion* q1, Quaternion* q2);
-Quaternion* subtract_quaternions(Quaternion* q1, Quaternion* q2);
-float dot_product_quaternion(Quaternion* q1, Quaternion* q2);
-Quaternion* scale_quaternion(float c, Quaternion* q);
-Quaternion* normalize_quaternion(Quaternion* q);
-Quaternion* identity_quaternion();
+typedef struct {
+    float x, y, z, w;
+} Quaternion;
 
 Vector* create_vector(int dimension);
-Vector* free_vector(Vector* v);
+Vector* create_3D_vector(float x, float y, float z);
+Vector* create_4D_vector(float x, float y, float z, float w);
+void free_vector(Vector* v);
 Vector* duplicate_vector(Vector* v);
 Vector* add_vectors(Vector* v1, Vector* v2);
 Vector* subtract_vectors(Vector* v1, Vector* v2);
@@ -67,7 +56,7 @@ Matrix* transpose_matrix(Matrix* m);
 Matrix* scale_matrix(float c, Matrix* m);
 Matrix* scale_matrix_anisotropic(float x, float y, float z, Matrix* m);
 float determinant_matrix(Matrix* m);
-Matrix* translate_matrix(Matrix* m, float x, float y, float z);
+Matrix* translate_matrix(float x, float y, float z);
 Matrix* translate_matrix_in_place(Matrix* m, float x, float y, float z);
 Matrix* outer_product(Vector* v1, Vector* v2);
 Matrix* duplicate_matrix(Matrix* m);
@@ -81,144 +70,15 @@ Matrix* look_at_matrix(Vector* eye, Vector* center, Vector* up);
 Matrix* orthographic_projection_matrix(float left, float right, float bottom, float top, float near, float far);
 Matrix* perspective_projection_matrix(float fov, float aspect, float near, float far);
 
-Quaternion* multiply_quaternions(Quaternion* q1, Quaternion* q2) {
-    Quaternion* result = create_quaternion(
-        q1->w * q2->x + q1->x * q2->w + q1->y * q2->z - q1->z * q2->y,
-        q1->w * q2->y - q1->x * q2->z + q1->y * q2->w + q1->z * q2->x,
-        q1->w * q2->z + q1->x * q2->y - q1->y * q2->x + q1->z * q2->w,
-        q1->w * q2->w - q1->x * q2->x - q1->y * q2->y - q1->z * q2->z
-    );
-    return result;
-}
-
-Quaternion* rotate_quaternion(Quaternion* q, Vector* axis, float angle) {
-    float half_angle = angle / 2.0f;
-    float sin_half = sin(half_angle);
-    
-    Quaternion* rotation = create_quaternion(
-        axis->elements[0] * sin_half,
-        axis->elements[1] * sin_half,
-        axis->elements[2] * sin_half,
-        cos(half_angle)
-    );
-    
-    Quaternion* rotated = multiply_quaternions(rotation, q);
-    Quaternion* conjugate = quaternion_conjugate(rotation);
-    Quaternion* result = multiply_quaternions(rotated, conjugate);
-    
-    free_quaternion(rotation);
-    free_quaternion(rotated);
-    free_quaternion(conjugate);
-    
-    return result;
-}
-
-Quaternion* quaternion_conjugate(Quaternion* q) {
-    return create_quaternion(-q->x, -q->y, -q->z, q->w);
-}
-
-Matrix* matrix_from_quaternion(Quaternion* q) {
-    Matrix* m = create_matrix(4);
-    
-    float xx = q->x * q->x;
-    float xy = q->x * q->y;
-    float xz = q->x * q->z;
-    float xw = q->x * q->w;
-    
-    float yy = q->y * q->y;
-    float yz = q->y * q->z;
-    float yw = q->y * q->w;
-    
-    float zz = q->z * q->z;
-    float zw = q->z * q->w;
-    
-    m->elements[0][0] = 1 - 2 * (yy + zz);
-    m->elements[0][1] = 2 * (xy - zw);
-    m->elements[0][2] = 2 * (xz + yw);
-    m->elements[0][3] = 0;
-    
-    m->elements[1][0] = 2 * (xy + zw);
-    m->elements[1][1] = 1 - 2 * (xx + zz);
-    m->elements[1][2] = 2 * (yz - xw);
-    m->elements[1][3] = 0;
-    
-    m->elements[2][0] = 2 * (xz - yw);
-    m->elements[2][1] = 2 * (yz + xw);
-    m->elements[2][2] = 1 - 2 * (xx + yy);
-    m->elements[2][3] = 0;
-    
-    m->elements[3][0] = 0;
-    m->elements[3][1] = 0;
-    m->elements[3][2] = 0;
-    m->elements[3][3] = 1;
-    
-    return m;
-}
-
-Quaternion* create_quaternion(float x, float y, float z, float w) {
-    Quaternion* q = (Quaternion*) (malloc(sizeof(Quaternion)));
-    q->x = x;
-    q->y = y;
-    q->z = z;
-    q->w = w;
-    return q;
-}
-
-Quaternion* identity_quaternion() {
-    return create_quaternion(0, 0, 0, 1);
-}
-
-void free_quaternion(Quaternion* q) {
-    free(q);
-    return;
-}
-
-Quaternion* add_quaternions(Quaternion* q1, Quaternion* q2) {
-    Quaternion* q = (Quaternion*) (malloc(sizeof(Quaternion)));
-    q->x = q1->x + q2->x;
-    q->y = q1->y + q2->y;
-    q->z = q1->z + q2->z;
-    q->w = q1->w + q2->w;
-    return q;
-}
-
-Quaternion* subtract_quaternions(Quaternion* q1, Quaternion* q2) {
-    Quaternion* q = (Quaternion*) (malloc(sizeof(Quaternion)));
-    q->x = q1->x - q2->x;
-    q->y = q1->y - q2->y;
-    q->z = q1->z - q2->z;
-    q->w = q1->w - q2->w;
-    return q;
-}
-
-float dot_product_quaternion(Quaternion* q1, Quaternion* q2) {
-    float sum = 0;
-    sum += q1->x * q2->x;
-    sum += q1->y * q2->y;
-    sum += q1->z * q2->z;
-    sum += q1->w * q2->w;
-    return sum;
-}
-
-Quaternion* scale_quaternion(float c, Quaternion* q) {
-    Quaternion* s = (Quaternion*) (malloc(sizeof(Quaternion)));
-    s->x = s->x * c;
-    s->y = s->y * c;
-    s->z = s->z * c;
-    s->w = s->w * c;
-    return s;
-}
-
-Quaternion* normalize_quaternion(Quaternion* q) {
-    float magnitude = sqrt(dot_product(q, q));
-    Quaternion* n = (Quaternion*) (malloc(sizeof(Quaternion)));
-    n->x = q->x / magnitude;
-    n->y = q->y / magnitude;
-    n->z = q->z / magnitude;
-    n->w = q->w / magnitude;
-    return n;
-}
-
+Quaternion* create_quaternion(float x, float y, float z, float w);
+void free_quaternion(Quaternion* q);
+Quaternion* add_quaternions(Quaternion* q1, Quaternion* q2);
+Quaternion* subtract_quaternions(Quaternion* q1, Quaternion* q2);
+float dot_product_quaternion(Quaternion* q1, Quaternion* q2);
+Quaternion* scale_quaternion(float c, Quaternion* q);
+Quaternion* normalize_quaternion(Quaternion* q);
+Quaternion* identity_quaternion();
+Quaternion* quaternion_conjugate(Quaternion* q);
 
 Vector* projection_vector(Vector* v1, Vector* v2) {
     if (v1->dimension != v2->dimension)
@@ -236,13 +96,30 @@ Vector* max_vector(Vector* v1, Vector* v2) {
     return max;
 }
 
+Vector* create_3D_vector(float x, float y, float z) {
+    Vector* v = create_vector(3);
+    v->elements[0] = x;
+    v->elements[1] = y;
+    v->elements[2] = z;
+    return v;
+}
+
+Vector* create_4D_vector(float x, float y, float z, float w) {
+    Vector* v = create_vector(4);
+    v->elements[0] = x;
+    v->elements[1] = y;
+    v->elements[2] = z;
+    v->elements[3] = w;
+    return v;
+}
+
 float angle_between_vectors(Vector* v1, Vector* v2) {
     if (v1->dimension != v2->dimension)
-        return -1;
+        return 0.f;
 
     float magnitude = magnitude_vector(v1) * magnitude_vector(v2);
     if (magnitude == 0)
-        return 0;
+        return 0.f;
 
     return acos(dot_product(v1, v2) / magnitude);
 }
@@ -275,7 +152,7 @@ Vector* create_vector(int dimension) {
     return v;
 }
 
-Vector* free_vector(Vector* v) {
+void free_vector(Vector* v) {
     free(v->elements);
     free(v);
 }
@@ -540,7 +417,7 @@ float determinant_matrix(Matrix* m) {
     return 0.0f;
 }
 
-Matrix* translate_matrix(Matrix* m, float x, float y, float z) {
+Matrix* translate_matrix(float x, float y, float z) {
     Matrix* t = create_matrix(4);
     for (int i = 0; i < 4; i++)
         t->elements[i][i] = 1;
@@ -552,18 +429,15 @@ Matrix* translate_matrix(Matrix* m, float x, float y, float z) {
 }
 
 Matrix* translate_matrix_in_place(Matrix* m, float x, float y, float z) {
-    if (m->dimension != 4) {
-        return NULL;  // This function only works for 4x4 matrices
-    }
+    if (m->dimension != 4)
+        return NULL;
 
-    // Create a translation vector
     Vector* t = create_vector(4);
     t->elements[0] = x;
     t->elements[1] = y;
     t->elements[2] = z;
     t->elements[3] = 0;
 
-    // Apply translation to each column
     for (int i = 0; i < 4; i++) {
         float dot_product = 0;
         for (int j = 0; j < 4; j++) {
@@ -571,10 +445,7 @@ Matrix* translate_matrix_in_place(Matrix* m, float x, float y, float z) {
         }
         m->elements[3][i] += dot_product;
     }
-
-    // Free the temporary vector
     free_vector(t);
-
     return m;
 }
 
@@ -636,7 +507,6 @@ Matrix* rotate_matrix(Matrix* m, float x, float y, float z, float angle) {
     r->elements[3][2] = 0;
     r->elements[3][3] = 1;
 
-    // Multiply the input matrix by the rotation matrix
     Matrix* result = multiply_matrices(m, r);
     free_matrix(r);
     
@@ -825,12 +695,10 @@ Matrix* look_at_matrix(Vector* eye, Vector* center, Vector* up) {
     result->elements[3][1] = 0;
     result->elements[3][2] = 0;
     result->elements[3][3] = 1;
-
-    Matrix* iden = identity_matrix(4);
-    Matrix* translation = translate_matrix(iden, -eye->elements[0], -eye->elements[1], -eye->elements[2]);
+    Matrix* translation = translate_matrix(-eye->elements[0], -eye->elements[1], -eye->elements[2]);
     Matrix* final_result = multiply_matrices(result, translation);
 
-    free_matrix(result); free_matrix(translation); free(iden);
+    free_matrix(result); free_matrix(translation);
     free_vector(f); free_vector(u); free_vector(s);
 
     return final_result;
@@ -864,6 +732,144 @@ Matrix* orthographic_projection_matrix(float left, float right, float bottom, fl
     return result;
 }
 
+
+Quaternion* multiply_quaternions(Quaternion* q1, Quaternion* q2) {
+    Quaternion* result = create_quaternion(
+        q1->w * q2->x + q1->x * q2->w + q1->y * q2->z - q1->z * q2->y,
+        q1->w * q2->y - q1->x * q2->z + q1->y * q2->w + q1->z * q2->x,
+        q1->w * q2->z + q1->x * q2->y - q1->y * q2->x + q1->z * q2->w,
+        q1->w * q2->w - q1->x * q2->x - q1->y * q2->y - q1->z * q2->z
+    );
+    return result;
+}
+
+Quaternion* rotate_quaternion(Quaternion* q, Vector* axis, float angle) {
+    float half_angle = angle / 2.0f;
+    float sin_half = sin(half_angle);
+    
+    Quaternion* rotation = create_quaternion(
+        axis->elements[0] * sin_half,
+        axis->elements[1] * sin_half,
+        axis->elements[2] * sin_half,
+        cos(half_angle)
+    );
+    
+    Quaternion* rotated = multiply_quaternions(rotation, q);
+    Quaternion* conjugate = quaternion_conjugate(rotation);
+    Quaternion* result = multiply_quaternions(rotated, conjugate);
+    
+    free_quaternion(rotation);
+    free_quaternion(rotated);
+    free_quaternion(conjugate);
+    
+    return result;
+}
+
+Quaternion* quaternion_conjugate(Quaternion* q) {
+    return create_quaternion(-q->x, -q->y, -q->z, q->w);
+}
+
+Matrix* matrix_from_quaternion(Quaternion* q) {
+    Matrix* m = create_matrix(4);
+    
+    float xx = q->x * q->x;
+    float xy = q->x * q->y;
+    float xz = q->x * q->z;
+    float xw = q->x * q->w;
+    
+    float yy = q->y * q->y;
+    float yz = q->y * q->z;
+    float yw = q->y * q->w;
+    
+    float zz = q->z * q->z;
+    float zw = q->z * q->w;
+    
+    m->elements[0][0] = 1 - 2 * (yy + zz);
+    m->elements[0][1] = 2 * (xy - zw);
+    m->elements[0][2] = 2 * (xz + yw);
+    m->elements[0][3] = 0;
+    
+    m->elements[1][0] = 2 * (xy + zw);
+    m->elements[1][1] = 1 - 2 * (xx + zz);
+    m->elements[1][2] = 2 * (yz - xw);
+    m->elements[1][3] = 0;
+    
+    m->elements[2][0] = 2 * (xz - yw);
+    m->elements[2][1] = 2 * (yz + xw);
+    m->elements[2][2] = 1 - 2 * (xx + yy);
+    m->elements[2][3] = 0;
+    
+    m->elements[3][0] = 0;
+    m->elements[3][1] = 0;
+    m->elements[3][2] = 0;
+    m->elements[3][3] = 1;
+    
+    return m;
+}
+
+Quaternion* create_quaternion(float x, float y, float z, float w) {
+    Quaternion* q = (Quaternion*) (malloc(sizeof(Quaternion)));
+    q->x = x;
+    q->y = y;
+    q->z = z;
+    q->w = w;
+    return q;
+}
+
+Quaternion* identity_quaternion() {
+    return create_quaternion(0, 0, 0, 1);
+}
+
+void free_quaternion(Quaternion* q) {
+    free(q);
+    return;
+}
+
+Quaternion* add_quaternions(Quaternion* q1, Quaternion* q2) {
+    Quaternion* q = (Quaternion*) (malloc(sizeof(Quaternion)));
+    q->x = q1->x + q2->x;
+    q->y = q1->y + q2->y;
+    q->z = q1->z + q2->z;
+    q->w = q1->w + q2->w;
+    return q;
+}
+
+Quaternion* subtract_quaternions(Quaternion* q1, Quaternion* q2) {
+    Quaternion* q = (Quaternion*) (malloc(sizeof(Quaternion)));
+    q->x = q1->x - q2->x;
+    q->y = q1->y - q2->y;
+    q->z = q1->z - q2->z;
+    q->w = q1->w - q2->w;
+    return q;
+}
+
+float dot_product_quaternion(Quaternion* q1, Quaternion* q2) {
+    float sum = 0;
+    sum += q1->x * q2->x;
+    sum += q1->y * q2->y;
+    sum += q1->z * q2->z;
+    sum += q1->w * q2->w;
+    return sum;
+}
+
+Quaternion* scale_quaternion(float c, Quaternion* q) {
+    Quaternion* s = (Quaternion*) (malloc(sizeof(Quaternion)));
+    s->x = q->x * c;
+    s->y = q->y * c;
+    s->z = q->z * c;
+    s->w = q->w * c;
+    return s;
+}
+
+Quaternion* normalize_quaternion(Quaternion* q) {
+    float magnitude = sqrt(dot_product_quaternion(q, q));
+    Quaternion* n = (Quaternion*) (malloc(sizeof(Quaternion)));
+    n->x = q->x / magnitude;
+    n->y = q->y / magnitude;
+    n->z = q->z / magnitude;
+    n->w = q->w / magnitude;
+    return n;
+}
 
 
 #endif

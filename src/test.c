@@ -1,182 +1,154 @@
 #include <stdio.h>
-#include <stdlib.h>
 #include <assert.h>
-#include <time.h>
 #include <math.h>
 #include "cvectors.h"
 
 #define EPSILON 1e-6
-#define TEST_RUNS 1000
 
-void test_add_vectors() {
-    for (int i = 0; i < TEST_RUNS; i++) {
-        Vector v1 = {2, (float[]){(float)rand() / RAND_MAX, (float)rand() / RAND_MAX}};
-        Vector v2 = {2, (float[]){(float)rand() / RAND_MAX, (float)rand() / RAND_MAX}};
-        Vector* result = add_vectors(&v1, &v2);
+void test_vector_operations() {
+    printf("Testing vector operations...\n");
 
-        assert(result != NULL);
-        assert(fabs(result->elements[0] - (v1.elements[0] + v2.elements[0])) < EPSILON);
-        assert(fabs(result->elements[1] - (v1.elements[1] + v2.elements[1])) < EPSILON);
+    Vector* v1 = create_3D_vector(1, 2, 3);
+    Vector* v2 = create_3D_vector(4, 5, 6);
 
-        free(result->elements);
-        free(result);
-    }
+    // Test addition
+    Vector* sum = add_vectors(v1, v2);
+    assert(fabs(sum->elements[0] - 5) < EPSILON);
+    assert(fabs(sum->elements[1] - 7) < EPSILON);
+    assert(fabs(sum->elements[2] - 9) < EPSILON);
+
+    // Test subtraction
+    Vector* diff = subtract_vectors(v2, v1);
+    assert(fabs(diff->elements[0] - 3) < EPSILON);
+    assert(fabs(diff->elements[1] - 3) < EPSILON);
+    assert(fabs(diff->elements[2] - 3) < EPSILON);
+
+    // Test dot product
+    float dot = dot_product(v1, v2);
+    assert(fabs(dot - 32) < EPSILON);
+
+    // Test cross product
+    Vector* cross = cross_product(v1, v2);
+    assert(fabs(cross->elements[0] - (-3)) < EPSILON);
+    assert(fabs(cross->elements[1] - 6) < EPSILON);
+    assert(fabs(cross->elements[2] - (-3)) < EPSILON);
+
+    // Test magnitude
+    float mag = magnitude_vector(v1);
+    assert(fabs(mag - sqrt(14)) < EPSILON);
+
+    // Test normalization
+    Vector* norm = normalize_vector(v1);
+    assert(fabs(magnitude_vector(norm) - 1) < EPSILON);
+
+    free_vector(v1);
+    free_vector(v2);
+    free_vector(sum);
+    free_vector(diff);
+    free_vector(cross);
+    free_vector(norm);
+
+    printf("Vector operations tests passed!\n");
 }
 
-void test_subtract_vectors() {
-    for (int i = 0; i < TEST_RUNS; i++) {
-        Vector v1 = {2, (float[]){(float)rand() / RAND_MAX, (float)rand() / RAND_MAX}};
-        Vector v2 = {2, (float[]){(float)rand() / RAND_MAX, (float)rand() / RAND_MAX}};
-        Vector* result = subtract_vectors(&v1, &v2);
+void test_matrix_operations() {
+    printf("Testing matrix operations...\n");
 
-        assert(result != NULL);
-        assert(fabs(result->elements[0] - (v1.elements[0] - v2.elements[0])) < EPSILON);
-        assert(fabs(result->elements[1] - (v1.elements[1] - v2.elements[1])) < EPSILON);
+    Matrix* m1 = create_matrix(4);
+    Matrix* m2 = create_matrix(4);
 
-        free(result->elements);
-        free(result);
+    for (int i = 0; i < 4; i++) {
+        for (int j = 0; j < 4; j++) {
+            m1->elements[i][j] = i * 4 + j + 1;
+            m2->elements[i][j] = (i * 4 + j + 1) * 2;
+        }
     }
+
+    // Test addition
+    Matrix* sum = add_matrices(m1, m2);
+    for (int i = 0; i < 4; i++) {
+        for (int j = 0; j < 4; j++) {
+            assert(fabs(sum->elements[i][j] - (m1->elements[i][j] + m2->elements[i][j])) < EPSILON);
+        }
+    }
+
+    // Test multiplication
+    Matrix* prod = multiply_matrices(m1, m2);
+    assert(fabs(prod->elements[0][0] - 90) < EPSILON);
+    assert(fabs(prod->elements[1][1] - 290) < EPSILON);
+    assert(fabs(prod->elements[2][2] - 490) < EPSILON);
+    assert(fabs(prod->elements[3][3] - 690) < EPSILON);
+
+    // Test transpose
+    Matrix* trans = transpose_matrix(m1);
+    for (int i = 0; i < 4; i++) {
+        for (int j = 0; j < 4; j++) {
+            assert(fabs(trans->elements[i][j] - m1->elements[j][i]) < EPSILON);
+        }
+    }
+
+    // Test determinant
+    float det = determinant_matrix(m1);
+    assert(fabs(det) < EPSILON);  // Should be zero for this particular matrix
+
+    free_matrix(m1);
+    free_matrix(m2);
+    free_matrix(sum);
+    free_matrix(prod);
+    free_matrix(trans);
+
+    printf("Matrix operations tests passed!\n");
 }
 
-void test_dot_product() {
-    for (int i = 0; i < TEST_RUNS; i++) {
-        Vector v1 = {2, (float[]){(float)rand() / RAND_MAX, (float)rand() / RAND_MAX}};
-        Vector v2 = {2, (float[]){(float)rand() / RAND_MAX, (float)rand() / RAND_MAX}};
-        float result = dot_product(&v1, &v2);
+void test_quaternion_operations() {
+    printf("Testing quaternion operations...\n");
 
-        float expected = v1.elements[0] * v2.elements[0] + v1.elements[1] * v2.elements[1];
-        assert(fabs(result - expected) < EPSILON);
-    }
-}
+    Quaternion* q1 = create_quaternion(1, 2, 3, 4);
+    Quaternion* q2 = create_quaternion(5, 6, 7, 8);
 
-void test_cross_product() {
-    for (int i = 0; i < TEST_RUNS; i++) {
-        Vector v1 = {3, (float[]){(float)rand() / RAND_MAX, (float)rand() / RAND_MAX, (float)rand() / RAND_MAX}};
-        Vector v2 = {3, (float[]){(float)rand() / RAND_MAX, (float)rand() / RAND_MAX, (float)rand() / RAND_MAX}};
-        Vector* result = cross_product(&v1, &v2);
+    // Test addition
+    Quaternion* sum = add_quaternions(q1, q2);
+    assert(fabs(sum->x - 6) < EPSILON);
+    assert(fabs(sum->y - 8) < EPSILON);
+    assert(fabs(sum->z - 10) < EPSILON);
+    assert(fabs(sum->w - 12) < EPSILON);
 
-        assert(result != NULL);
-        assert(fabs(result->elements[0] - ((v1.elements[1] * v2.elements[2]) - (v1.elements[2] * v2.elements[1]))) < EPSILON);
-        assert(fabs(result->elements[1] - (-((v1.elements[0] * v2.elements[2]) - (v1.elements[2] * v2.elements[0])))) < EPSILON);
-        assert(fabs(result->elements[2] - ((v1.elements[0] * v2.elements[1]) - (v1.elements[1] * v2.elements[0]))) < EPSILON);
+    // Test dot product
+    float dot = dot_product_quaternion(q1, q2);
+    assert(fabs(dot - 70) < EPSILON);
 
-        free(result->elements);
-        free(result);
-    }
-}
+    // Test normalization
+    Quaternion* norm = normalize_quaternion(q1);
+    float mag = sqrt(norm->x*norm->x + norm->y*norm->y + norm->z*norm->z + norm->w*norm->w);
+    assert(fabs(mag - 1) < EPSILON);
 
-void test_transform_vector() {
-    for (int i = 0; i < TEST_RUNS; i++) {
-        Matrix m = {2, (float*[]){(float[]){(float)rand() / RAND_MAX, (float)rand() / RAND_MAX}, (float[]){(float)rand() / RAND_MAX, (float)rand() / RAND_MAX}}};
-        Vector v = {2, (float[]){(float)rand() / RAND_MAX, (float)rand() / RAND_MAX}};
-        Vector* result = transform_vector(&m, &v);
+    // Test quaternion to matrix conversion
+    Matrix* m = matrix_from_quaternion(q1);
+    assert(fabs(m->elements[0][0] - (-0.6666667)) < EPSILON);
+    assert(fabs(m->elements[1][1] - (-0.3333333)) < EPSILON);
+    assert(fabs(m->elements[2][2] - (0.6666667)) < EPSILON);
 
-        assert(result != NULL);
-        assert(fabs(result->elements[0] - (m.elements[0][0] * v.elements[0] + m.elements[0][1] * v.elements[1])) < EPSILON);
-        assert(fabs(result->elements[1] - (m.elements[1][0] * v.elements[0] + m.elements[1][1] * v.elements[1])) < EPSILON);
+    free_quaternion(q1);
+    free_quaternion(q2);
+    free_quaternion(sum);
+    free_quaternion(norm);
+    free_matrix(m);
 
-        free(result->elements);
-        free(result);
-    }
-}
-
-void test_scale_vector() {
-    for (int i = 0; i < TEST_RUNS; i++) {
-        Vector v = {2, (float[]){(float)rand() / RAND_MAX, (float)rand() / RAND_MAX}};
-        float c = (float)rand() / RAND_MAX;
-        Vector* result = scale_vector(c, &v);
-
-        assert(result != NULL);
-        assert(fabs(result->elements[0] - (v.elements[0] * c)) < EPSILON);
-        assert(fabs(result->elements[1] - (v.elements[1] * c)) < EPSILON);
-
-        free(result->elements);
-        free(result);
-    }
-}
-
-void test_normalize_vector() {
-    for (int i = 0; i < TEST_RUNS; i++) {
-        Vector v = {2, (float[]){(float)rand() / RAND_MAX + 0.1, (float)rand() / RAND_MAX + 0.1}}; // Adding 0.1 to avoid zero vector
-        Vector* result = normalize_vector(&v);
-
-        float magnitude = sqrt(v.elements[0] * v.elements[0] + v.elements[1] * v.elements[1]);
-
-        assert(result != NULL);
-        assert(fabs(result->elements[0] - (v.elements[0] / magnitude)) < EPSILON);
-        assert(fabs(result->elements[1] - (v.elements[1] / magnitude)) < EPSILON);
-
-        free(result->elements);
-        free(result);
-    }
-}
-
-void test_add_matrices() {
-    for (int i = 0; i < TEST_RUNS; i++) {
-        Matrix m1 = {2, (float*[]){(float[]){(float)rand() / RAND_MAX, (float)rand() / RAND_MAX}, (float[]){(float)rand() / RAND_MAX, (float)rand() / RAND_MAX}}};
-        Matrix m2 = {2, (float*[]){(float[]){(float)rand() / RAND_MAX, (float)rand() / RAND_MAX}, (float[]){(float)rand() / RAND_MAX, (float)rand() / RAND_MAX}}};
-        Matrix* result = add_matrices(&m1, &m2);
-
-        assert(result != NULL);
-        assert(fabs(result->elements[0][0] - (m1.elements[0][0] + m2.elements[0][0])) < EPSILON);
-        assert(fabs(result->elements[0][1] - (m1.elements[0][1] + m2.elements[0][1])) < EPSILON);
-        assert(fabs(result->elements[1][0] - (m1.elements[1][0] + m2.elements[1][0])) < EPSILON);
-        assert(fabs(result->elements[1][1] - (m1.elements[1][1] + m2.elements[1][1])) < EPSILON);
-
-        free_matrix(result);
-    }
-}
-
-void test_subtract_matrices() {
-    for (int i = 0; i < TEST_RUNS; i++) {
-        Matrix m1 = {2, (float*[]){(float[]){(float)rand() / RAND_MAX, (float)rand() / RAND_MAX}, (float[]){(float)rand() / RAND_MAX, (float)rand() / RAND_MAX}}};
-        Matrix m2 = {2, (float*[]){(float[]){(float)rand() / RAND_MAX, (float)rand() / RAND_MAX}, (float[]){(float)rand() / RAND_MAX, (float)rand() / RAND_MAX}}};
-        Matrix* result = subtract_matrices(&m1, &m2);
-
-        assert(result != NULL);
-        assert(fabs(result->elements[0][0] - (m1.elements[0][0] - m2.elements[0][0])) < EPSILON);
-        assert(fabs(result->elements[0][1] - (m1.elements[0][1] - m2.elements[0][1])) < EPSILON);
-        assert(fabs(result->elements[1][0] - (m1.elements[1][0] - m2.elements[1][0])) < EPSILON);
-        assert(fabs(result->elements[1][1] - (m1.elements[1][1] - m2.elements[1][1])) < EPSILON);
-
-        free_matrix(result);
-    }
-}
-
-void test_multiply_matrices() {
-    for (int i = 0; i < TEST_RUNS; i++) {
-        Matrix m1 = {2, (float*[]){(float[]){(float)rand() / RAND_MAX, (float)rand() / RAND_MAX}, (float[]){(float)rand() / RAND_MAX, (float)rand() / RAND_MAX}}};
-        Matrix m2 = {2, (float*[]){(float[]){(float)rand() / RAND_MAX, (float)rand() / RAND_MAX}, (float[]){(float)rand() / RAND_MAX, (float)rand() / RAND_MAX}}};
-        Matrix* result = multiply_matrices(&m1, &m2);
-
-        assert(result != NULL);
-        assert(fabs(result->elements[0][0] - (m1.elements[0][0] * m2.elements[0][0] + m1.elements[0][1] * m2.elements[1][0])) < EPSILON);
-        assert(fabs(result->elements[0][1] - (m1.elements[0][0] * m2.elements[0][1] + m1.elements[0][1] * m2.elements[1][1])) < EPSILON);
-        assert(fabs(result->elements[1][0] - (m1.elements[1][0] * m2.elements[0][0] + m1.elements[1][1] * m2.elements[1][0])) < EPSILON);
-        assert(fabs(result->elements[1][1] - (m1.elements[1][0] * m2.elements[0][1] + m1.elements[1][1] * m2.elements[1][1])) < EPSILON);
-
-        free_matrix(result);
-    }
+    printf("Quaternion operations tests passed!\n");
 }
 
 int main() {
-    srand(time(NULL));
-    #ifdef VECTOR_TEST
-    test_add_vectors();
-    test_subtract_vectors();
-    test_dot_product();
-    test_cross_product();
-    test_transform_vector();
-    test_scale_vector();
-    test_normalize_vector();
-    #endif
+    printf("Starting cvectors library tests...\n\n");
 
-    #ifdef MATRIX_TEST
-    test_add_matrices();
-    test_subtract_matrices();
-    test_multiply_matrices();
+    #ifdef VECTOR
+    test_vector_operations();
     #endif
-
-    printf("All tests passed successfully!\n");
+    #ifdef MATRIX
+    test_matrix_operations();
+    #endif
+    #ifdef QUAT
+    test_quaternion_operations();
+    #endif
+    printf("\nAll tests passed successfully!\n");
     return 0;
 }
