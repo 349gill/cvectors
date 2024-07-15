@@ -266,7 +266,7 @@ Rotates a quaternion around an axis by the given angle.
  axis = normalize(axis)
  rotation = (axis.x * sin(angle/2), axis.y * sin(angle/2), axis.z * sin(angle/2), cos(angle/2))
  result = multiply_quaternions(q, rotation)
- ``
+ ```
 
 ### matrix_from_quaternion(Quaternion* q)
 Converts a quaternion to a 4x4 rotation matrix.
