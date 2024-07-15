@@ -70,7 +70,7 @@ void test_matrix_operations() {
         }
     }
     float det = determinant_matrix(m1);
-    assert(fabs(det) < EPSILON);  // Should be zero for this particular matrix
+    assert(fabs(det) < EPSILON);
 
     free_matrix(m1);
     free_matrix(m2);
