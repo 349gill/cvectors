@@ -7,7 +7,7 @@
 - Under active development, open-source contributions are encouraged and appreciated.
 
 ## Dependencies
-- Developed in [C99](https://en.wikipedia.org/wiki/C99) but works with any other C standard with Backwards Compatibility, like [C23](https://en.wikipedia.org/wiki/C23_(C_standard_revision)).
+- Developed in [C99](https://en.wikipedia.org/wiki/C99) but works with any other C standard with backwards compatibility, like [C23](https://en.wikipedia.org/wiki/C23_(C_standard_revision)).
 
 - Uses standard libraries: [string.h](https://en.wikibooks.org/wiki/C_Programming/string.h), [stdlib.h](https://en.wikibooks.org/wiki/C_Programming/stdlib.h) and [math.h](https://en.wikibooks.org/wiki/C_Programming/math.h).
 
