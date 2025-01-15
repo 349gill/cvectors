@@ -1,4 +1,4 @@
-# CVector Library Documentation
+# CVectors Library Documentation
 
 ## Vector Functions
 
